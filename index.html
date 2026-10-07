@@ -35,8 +35,8 @@ header h1 span{color:var(--accent)}
 .narrative{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.12);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;font-size:.82rem;line-height:1.9;color:#cbd5e1}
 .narrative strong{color:#e2e8f0}
 .narrative .hl{color:var(--accent);font-weight:600}
-.narrative .pos{color:var(--green);font-weight:600}
-.narrative .neg{color:var(--red);font-weight:600}
+.pos{color:var(--green);font-weight:600}
+.neg{color:var(--red);font-weight:600}
 
 .loading-overlay{text-align:center;padding:3rem;color:var(--muted);font-size:.85rem}
 .spinner{width:36px;height:36px;border:3px solid rgba(59,130,246,.2);border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .8rem}
@@ -229,7 +229,7 @@ function hideLoading(){document.getElementById('loadingArea').style.display='non
 function openInfo(){document.getElementById('infoModal').classList.add('active')}
 function closeInfo(){document.getElementById('infoModal').classList.remove('active')}
 
-async function safeFetch(url){try{const r=await fetch(url);if(!r.ok)return null;return r.json()}catch(e){console.warn('Fetch error:',url,e);return null}}
+async function safeFetch(url){try{const c=new AbortController();const t=setTimeout(()=>c.abort(),15000);const r=await fetch(url,{signal:c.signal});clearTimeout(t);if(!r.ok)return null;return r.json()}catch(e){console.warn('Fetch error:',url,e);return null}}
 
 function parseIBGEPop(json){
   if(!json||!json[0]||!json[0].resultados)return{};
@@ -272,6 +272,7 @@ function lastYear(obj){if(!obj)return null;const ks=Object.keys(obj).sort();retu
 
 async function init(){
   showLoading();
+  try{
   const [estados,popNac,pibNac,vabNac,popStates,pibStates,selic,ipca,credito,inad,emp]=await Promise.all([
     safeFetch(`${IBGE_LOC}/estados?orderBy=nome`),
     safeFetch(`${IBGE_AGG}/6579/periodos/-6/variaveis/9324?localidades=N1[all]`),
@@ -326,6 +327,7 @@ async function init(){
 
   buildTabs();
   renderView(nationalData);
+  }catch(e){console.error('Init error:',e);document.getElementById('narrative').innerHTML='<strong>Erro ao carregar dados.</strong> Verifique sua conexao e recarregue a pagina.';}
   hideLoading();
 }
 
