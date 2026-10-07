@@ -161,7 +161,7 @@ header h1 span{color:var(--accent)}
 <div class="footer">
   PIPPA — Plataforma de Inteligencia em Politicas Publicas Aplicadas | Sebrae Nacional<br>
   Dados: IBGE (Agregados v3, Localidades) · BCB (SGS) | Consulta em tempo real via APIs publicas<br>
-  Populacao: IBGE Estimativas · PIB: IBGE Contas Municipais · Financeiro: Banco Central do Brasil
+  Populacao: IBGE Estimativas · PIB: IBGE Contas Municipais · Empresas: IBGE CEMPRE · Financeiro: Banco Central do Brasil
 </div>
 
 </div>
@@ -187,6 +187,15 @@ header h1 span{color:var(--accent)}
       <li><strong>Nota:</strong> PIB total refere-se ao ultimo ano disponivel; composicao setorial (VAB) disponivel ate 2021.</li>
     </ul>
     <div class="info-source">API: servicodados.ibge.gov.br/api/v3/agregados/5938</div>
+
+    <h3>Empresas e Emprego</h3>
+    <ul>
+      <li><strong>Fonte:</strong> IBGE — Cadastro Central de Empresas / CEMPRE (Tabela 6450).</li>
+      <li><strong>Variaveis:</strong> unidades locais, pessoal ocupado total e assalariado, salarios e remuneracoes.</li>
+      <li><strong>Classificacao:</strong> secoes da CNAE 2.0 (21 setores economicos).</li>
+      <li><strong>Nota:</strong> CEMPRE conta estabelecimentos formais (nao inclui MEIs em todos os casos). Os dados de porte (MEI, ME, EPP) requerem dados da Receita Federal via cubos OLAP do Sebrae, nao disponiveis via API publica.</li>
+    </ul>
+    <div class="info-source">API: servicodados.ibge.gov.br/api/v3/agregados/6450</div>
 
     <h3>Indicadores Financeiros (Cenario Nacional)</h3>
     <ul>
@@ -219,6 +228,18 @@ let bcbData={};
 let nationalData=null;
 let currentView={level:'brasil',code:'all',name:'Brasil'};
 let charts={};
+let cempreCache={};
+
+const CNAE_SECTIONS='117897,116830,116880,116910,117296,117307,117329,117363,117484,117543,117555,117608,117666,117673,117714,117774,117788,117810,117838,117861';
+const CNAE_LABELS={
+'116830':'Agropecuaria','116880':'Ind. Extrativa','116910':'Ind. Transformacao',
+'117296':'Eletricidade/Gas','117307':'Agua/Esgoto','117329':'Construcao',
+'117363':'Comercio','117484':'Transporte','117543':'Alojamento/Alimentacao',
+'117555':'Info/Comunicacao','117608':'Financeiro','117666':'Imobiliario',
+'117673':'Profissional/Cientifico','117714':'Administrativo','117774':'Adm. Publica',
+'117788':'Educacao','117810':'Saude','117838':'Artes/Cultura',
+'117861':'Outros Servicos','117888':'Serv. Domesticos','117892':'Org. Internacionais'
+};
 
 function fN(v){if(v==null)return'N/D';if(Math.abs(v)>=1e12)return(v/1e12).toFixed(1)+' tri';if(Math.abs(v)>=1e9)return(v/1e9).toFixed(1)+' bi';if(Math.abs(v)>=1e6)return(v/1e6).toFixed(1)+' mi';if(Math.abs(v)>=1e3)return(v/1e3).toFixed(1)+' mil';return v.toLocaleString('pt-BR')}
 function fC(v){return v!=null?'R$ '+fN(v):'N/D'}
@@ -267,19 +288,48 @@ function parseIBGEPib(json){
   return out;
 }
 
+function parseCEMPRE(json){
+  if(!json)return null;
+  const out={};let ano=null;
+  json.forEach(v=>{
+    if(!v.resultados)return;
+    v.resultados.forEach(r=>{
+      const cls=r.classificacoes&&r.classificacoes[0];
+      if(!cls)return;
+      const catId=Object.keys(cls.categoria)[0];
+      const catName=Object.values(cls.categoria)[0];
+      const s=r.series&&r.series[0];
+      if(!s)return;
+      const yr=Object.keys(s.serie).sort().pop();
+      const val=s.serie[yr];
+      if(!val||val==='...'||val==='-'||val==='X')return;
+      if(!ano)ano=yr;
+      if(!out[catId])out[catId]={nome:catName,label:CNAE_LABELS[catId]||catName.replace(/^[A-Z] /,'')};
+      const n=parseFloat(val);
+      if(v.id==='706')out[catId].empresas=n;
+      else if(v.id==='707')out[catId].empregados=n;
+      else if(v.id==='708')out[catId].assalariados=n;
+      else if(v.id==='662')out[catId].salarios=n*1000;
+      else if(v.id==='2585')out[catId].empresas=n;
+    });
+  });
+  return{setores:out,ano};
+}
+
 function lastVal(obj){if(!obj)return null;const ks=Object.keys(obj).sort();return ks.length?obj[ks[ks.length-1]]:null}
 function lastYear(obj){if(!obj)return null;const ks=Object.keys(obj).sort();return ks.length?ks[ks.length-1]:null}
 
 async function init(){
   showLoading();
   try{
-  const [estados,popNac,pibNac,vabNac,popStates,pibStates,selic,ipca,credito,inad,emp]=await Promise.all([
+  const [estados,popNac,pibNac,vabNac,popStates,pibStates,cempreNac,selic,ipca,credito,inad,emp]=await Promise.all([
     safeFetch(`${IBGE_LOC}/estados?orderBy=nome`),
     safeFetch(`${IBGE_AGG}/6579/periodos/-6/variaveis/9324?localidades=N1[all]`),
     safeFetch(`${IBGE_AGG}/5938/periodos/-5/variaveis/37?localidades=N1[all]`),
     safeFetch(`${IBGE_AGG}/5938/periodos/2021/variaveis/37|498|513|517|6575|525?localidades=N1[all]`),
     safeFetch(`${IBGE_AGG}/6579/periodos/last/variaveis/9324?localidades=N3[all]`),
     safeFetch(`${IBGE_AGG}/5938/periodos/last/variaveis/37?localidades=N3[all]`),
+    safeFetch(`${IBGE_AGG}/6450/periodos/last/variaveis/706|707|708|662?localidades=N1[all]&classificacao=12762[${CNAE_SECTIONS}]`),
     safeFetch(`${BCB}.432/dados/ultimos/1?formato=json`),
     safeFetch(`${BCB}.433/dados/ultimos/12?formato=json`),
     safeFetch(`${BCB}.20631/dados/ultimos/1?formato=json`),
@@ -303,8 +353,10 @@ async function init(){
     pib:pb.pib,pibTotal:latestPib,pibAno:lastYear(pb.pib),
     pibPc:latestPop&&latestPib?latestPib/latestPop:null,
     vabAgro:lastVal(vb.vabAgro),vabInd:lastVal(vb.vabInd),
-    vabServ:lastVal(vb.vabServ),vabAdmin:lastVal(vb.vabAdmin),vabAno:'2021'
+    vabServ:lastVal(vb.vabServ),vabAdmin:lastVal(vb.vabAdmin),vabAno:'2021',
+    cempre:parseCEMPRE(cempreNac)
   };
+  cempreCache['brasil']=nationalData.cempre;
 
   const stPop=parseIBGEPop(popStates);
   const stPib=parseIBGEPib(pibStates);
@@ -353,14 +405,16 @@ async function loadMunicipios(ufId){
 async function fetchTerritoryData(level,code){
   const nv=IBGE_NIVEL[level];
   const c=code||'all';
-  const [popJ,pibJ,vabJ]=await Promise.all([
+  const [popJ,pibJ,vabJ,cempreJ]=await Promise.all([
     safeFetch(`${IBGE_AGG}/6579/periodos/-6/variaveis/9324?localidades=${nv}[${c}]`),
     safeFetch(`${IBGE_AGG}/5938/periodos/-5/variaveis/37?localidades=${nv}[${c}]`),
-    safeFetch(`${IBGE_AGG}/5938/periodos/2021/variaveis/37|498|513|517|6575|525?localidades=${nv}[${c}]`)
+    safeFetch(`${IBGE_AGG}/5938/periodos/2021/variaveis/37|498|513|517|6575|525?localidades=${nv}[${c}]`),
+    safeFetch(`${IBGE_AGG}/6450/periodos/last/variaveis/706|707|708|662?localidades=${nv}[${c}]&classificacao=12762[${CNAE_SECTIONS}]`)
   ]);
   const popData=parseIBGEPop(popJ);
   const pibData=parseIBGEPib(pibJ);
   const vabData=parseIBGEPib(vabJ);
+  const cempre=parseCEMPRE(cempreJ);
   const firstKey=Object.keys(popData)[0]||Object.keys(pibData)[0]||Object.keys(vabData)[0];
   if(!firstKey)return null;
   const p=popData[firstKey]||{pop:{}};
@@ -373,7 +427,8 @@ async function fetchTerritoryData(level,code){
     pib:pb.pib,pibTotal:latestPib,pibAno:lastYear(pb.pib),
     pibPc:latestPop&&latestPib?latestPib/latestPop:null,
     vabAgro:lastVal(vb.vabAgro),vabInd:lastVal(vb.vabInd),
-    vabServ:lastVal(vb.vabServ),vabAdmin:lastVal(vb.vabAdmin),vabAno:'2021'
+    vabServ:lastVal(vb.vabServ),vabAdmin:lastVal(vb.vabAdmin),vabAno:'2021',
+    cempre
   };
 }
 
@@ -439,6 +494,8 @@ function buildTabs(){
   const cont=document.getElementById('tabContents');
   const tabs=[
     {id:'perfil',label:'Quem Somos'},
+    {id:'empresas',label:'Empresas'},
+    {id:'emprego',label:'Emprego'},
     {id:'economia',label:'Economia'},
     {id:'cenario',label:'Cenario Nacional'}
   ];
@@ -464,6 +521,8 @@ function renderView(data){
   renderKPIs(data);
   renderNarrative(data);
   renderPerfil(data);
+  renderEmpresas(data);
+  renderEmprego(data);
   renderEconomia(data);
   renderCenario();
 }
@@ -613,6 +672,180 @@ function renderPerfil(d){
       type:'bar',
       data:{labels:years,datasets:[{label:'Populacao',data:popValues,backgroundColor:'rgba(59,130,246,.6)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4}]},
       options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Populacao: '+fN(c.raw)}}},scales:{x:{ticks:{color:'#64748b',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#64748b',callback:v=>fN(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
+    });
+  }
+}
+
+function renderEmpresas(d){
+  const el=document.getElementById('tab-empresas');
+  const ce=d.cempre;
+  if(!ce||!ce.setores){el.innerHTML='<div class="insight-box warn"><div class="insight-title">Dados de empresas indisponiveis</div>O IBGE CEMPRE nao retornou dados para este territorio. Tente outro nivel territorial.</div>';return}
+
+  const total=ce.setores['117897'];
+  const setores=Object.entries(ce.setores).filter(([k])=>k!=='117897').map(([k,v])=>({id:k,...v})).filter(s=>s.empresas>0);
+  setores.sort((a,b)=>(b.empresas||0)-(a.empresas||0));
+  const top=setores.slice(0,12);
+
+  const totalEmpresas=total?total.empresas:setores.reduce((s,v)=>s+(v.empresas||0),0);
+  const totalEmp=total?total.empregados:setores.reduce((s,v)=>s+(v.empregados||0),0);
+  const totalSal=total?total.salarios:setores.reduce((s,v)=>s+(v.salarios||0),0);
+  const totalAss=total?total.assalariados:setores.reduce((s,v)=>s+(v.assalariados||0),0);
+  const empPorMilHab=d.populacao&&totalEmpresas?(totalEmpresas/d.populacao*1000).toFixed(1):null;
+  const salMedio=totalAss>0?(totalSal/totalAss/12):null;
+
+  const nacCe=nationalData&&nationalData.cempre?nationalData.cempre.setores['117897']:null;
+  const nacEmpMil=nacCe&&nationalData.populacao?(nacCe.empresas/nationalData.populacao*1000).toFixed(1):null;
+
+  let profileText='';
+  if(top.length>0){
+    const topSetor=top[0];
+    const pctTop=totalEmpresas>0?((topSetor.empresas/totalEmpresas)*100).toFixed(1):0;
+    profileText=`<div class="insight-box info"><div class="insight-title">Perfil empresarial</div>O setor com maior presenca e <strong>${topSetor.label}</strong>, representando <strong>${pctTop}%</strong> das ${fN(totalEmpresas)} unidades empresariais (IBGE CEMPRE ${ce.ano}). `;
+    if(empPorMilHab&&nacEmpMil){
+      const ratio=parseFloat(empPorMilHab)/parseFloat(nacEmpMil);
+      profileText+=`A densidade empresarial e de <strong>${empPorMilHab} empresas/mil hab.</strong> (media BR: ${nacEmpMil}). `;
+      if(ratio<0.5)profileText+=`Esse valor baixo pode indicar alta informalidade ou economia centrada no setor publico.`;
+      else if(ratio>1.2)profileText+=`Acima da media nacional, indicando ambiente empreendedor mais ativo.`;
+    }
+    profileText+=`</div>`;
+  }
+
+  let rankHtml='';
+  if(top.length>0){
+    const maxE=top[0].empresas||1;
+    rankHtml='<div class="ranking-list">';
+    top.forEach((s,i)=>{
+      const w=Math.max(5,(s.empresas/maxE)*100);
+      rankHtml+=`<div class="ranking-item"><div class="ranking-pos">${i+1}</div><div class="ranking-name">${s.label}</div><div class="ranking-bar"><div class="ranking-fill" style="width:${w}%;background:var(--purple)"></div></div><div class="ranking-value">${fN(s.empresas)}</div></div>`;
+    });
+    rankHtml+='</div>';
+  }
+
+  el.innerHTML=`
+    <div class="kpi-row" style="margin-bottom:1rem">
+      <div class="kpi kpi-blue"><div class="kpi-label">Unidades empresariais</div><div class="kpi-value">${fN(totalEmpresas)}</div><div class="kpi-detail">IBGE CEMPRE ${ce.ano}</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Pessoal ocupado</div><div class="kpi-value">${fN(totalEmp)}</div><div class="kpi-detail">Empregados formais</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Empresas/mil hab.</div><div class="kpi-value">${empPorMilHab||'N/D'}</div><div class="kpi-detail">${nacEmpMil?'Media BR: '+nacEmpMil:''}</div></div>
+      <div class="kpi kpi-yellow"><div class="kpi-label">Salario medio mensal</div><div class="kpi-value">${salMedio?fC(salMedio):'N/D'}</div><div class="kpi-detail">Massa salarial / assalariados / 12</div></div>
+    </div>
+    ${profileText}
+    <div class="grid-2">
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--purple)"></span>Unidades empresariais por setor CNAE</div>
+        <canvas id="chartEmpresas"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Ranking de setores</div>
+        ${rankHtml}
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Pessoal ocupado por setor</div>
+        <canvas id="chartEmprego2"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Massa salarial por setor (R$)</div>
+        <canvas id="chartSalarios"></canvas>
+      </div>
+    </div>`;
+
+  destroyChart('empresas');destroyChart('emprego2');destroyChart('salarios');
+
+  if(top.length>0){
+    const labels=top.map(s=>s.label.length>18?s.label.substring(0,16)+'...':s.label);
+    charts.empresas=new Chart(document.getElementById('chartEmpresas'),{
+      type:'bar',
+      data:{labels,datasets:[{label:'Empresas',data:top.map(s=>s.empresas||0),backgroundColor:'rgba(168,85,247,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' unidades'}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+    });
+
+    const empSetores=setores.filter(s=>s.empregados>0).sort((a,b)=>(b.empregados||0)-(a.empregados||0)).slice(0,10);
+    charts.emprego2=new Chart(document.getElementById('chartEmprego2'),{
+      type:'bar',
+      data:{labels:empSetores.map(s=>s.label.length>18?s.label.substring(0,16)+'...':s.label),datasets:[{label:'Empregados',data:empSetores.map(s=>s.empregados||0),backgroundColor:'rgba(34,197,94,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' pessoas'}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+    });
+
+    const salSetores=setores.filter(s=>s.salarios>0).sort((a,b)=>(b.salarios||0)-(a.salarios||0)).slice(0,10);
+    charts.salarios=new Chart(document.getElementById('chartSalarios'),{
+      type:'bar',
+      data:{labels:salSetores.map(s=>s.label.length>18?s.label.substring(0,16)+'...':s.label),datasets:[{label:'Salarios',data:salSetores.map(s=>s.salarios||0),backgroundColor:'rgba(234,179,8,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fC(c.raw)}}},scales:{x:{ticks:{color:'#64748b',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+    });
+  }
+}
+
+function renderEmprego(d){
+  const el=document.getElementById('tab-emprego');
+  const ce=d.cempre;
+  if(!ce||!ce.setores){el.innerHTML='<div class="insight-box warn"><div class="insight-title">Dados de emprego indisponiveis</div>Nao foi possivel obter dados de emprego para este territorio.</div>';return}
+
+  const total=ce.setores['117897'];
+  const setores=Object.entries(ce.setores).filter(([k])=>k!=='117897').map(([k,v])=>({id:k,...v})).filter(s=>s.empregados>0);
+  setores.sort((a,b)=>(b.empregados||0)-(a.empregados||0));
+
+  const totalEmp=total?total.empregados:setores.reduce((s,v)=>s+(v.empregados||0),0);
+  const totalAss=total?total.assalariados:setores.reduce((s,v)=>s+(v.assalariados||0),0);
+  const totalSal=total?total.salarios:setores.reduce((s,v)=>s+(v.salarios||0),0);
+  const pctFormal=totalEmp>0&&totalAss>0?((totalAss/totalEmp)*100):null;
+  const salMedio=totalAss>0?(totalSal/totalAss/12):null;
+  const empPorHab=d.populacao&&totalEmp?(totalEmp/d.populacao*100).toFixed(1):null;
+
+  let insightText='';
+  if(setores.length>0){
+    const topSetor=setores[0];
+    const topPct=totalEmp>0?((topSetor.empregados/totalEmp)*100).toFixed(1):0;
+    insightText=`<div class="insight-box info"><div class="insight-title">Quem mais emprega?</div>O setor <strong>${topSetor.label}</strong> e o maior empregador, com <strong>${fN(topSetor.empregados)} pessoas</strong> (${topPct}% do total). `;
+    if(empPorHab)insightText+=`A taxa de emprego formal e de <strong>${empPorHab}%</strong> da populacao. `;
+    if(pctFormal!=null){
+      insightText+=pctFormal>80?`A alta taxa de assalariamento (${pct(pctFormal)}) indica predominio de relacoes formais de trabalho.`:`A taxa de assalariamento e de ${pct(pctFormal)}.`;
+    }
+    insightText+=`</div>`;
+  }
+
+  const top10=setores.slice(0,10);
+  const empLabels=top10.map(s=>s.label.length>20?s.label.substring(0,18)+'...':s.label);
+  const empValues=top10.map(s=>s.empregados||0);
+  const salValues=top10.map(s=>s.salarios&&s.assalariados?(s.salarios/s.assalariados/12):0);
+
+  el.innerHTML=`
+    <div class="kpi-row" style="margin-bottom:1rem">
+      <div class="kpi kpi-blue"><div class="kpi-label">Pessoal ocupado</div><div class="kpi-value">${fN(totalEmp)}</div><div class="kpi-detail">IBGE CEMPRE ${ce.ano}</div></div>
+      <div class="kpi kpi-green"><div class="kpi-label">Assalariados</div><div class="kpi-value">${fN(totalAss)}</div><div class="kpi-detail">${pctFormal!=null?pct(pctFormal)+' do total':''}</div></div>
+      <div class="kpi kpi-purple"><div class="kpi-label">Salario medio</div><div class="kpi-value">${salMedio?fC(salMedio):'N/D'}</div><div class="kpi-detail">Estimativa mensal</div></div>
+      <div class="kpi kpi-yellow"><div class="kpi-label">Massa salarial/ano</div><div class="kpi-value">${fC(totalSal)}</div><div class="kpi-detail">${ce.ano}</div></div>
+    </div>
+    ${insightText}
+    <div class="grid-2">
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--accent)"></span>Empregados por setor</div>
+        <canvas id="chartEmpregoSetor"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Salario medio mensal por setor</div>
+        <canvas id="chartSalarioSetor"></canvas>
+      </div>
+    </div>
+    <div class="insight-box">
+      <div class="insight-title">Contexto nacional — CAGED</div>
+      ${bcbData.empregoSaldo!=null?`O Brasil registrou saldo de <strong>${bcbData.empregoSaldo>=0?'+':''}${fN(bcbData.empregoSaldo)}</strong> empregos formais no ultimo mes (CAGED/BCB). `:''}
+      ${bcbData.selic!=null?`Com a Selic em ${bcbData.selic.toFixed(2)}%, o custo de contratacao e investimento segue pressionado.`:''}
+    </div>`;
+
+  destroyChart('empregoSetor');destroyChart('salarioSetor');
+
+  if(top10.length>0){
+    charts.empregoSetor=new Chart(document.getElementById('chartEmpregoSetor'),{
+      type:'doughnut',
+      data:{labels:empLabels,datasets:[{data:empValues,backgroundColor:CHART_COLORS.slice(0,empValues.length),borderWidth:0}]},
+      options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:10},padding:8,boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fN(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
+    });
+
+    charts.salarioSetor=new Chart(document.getElementById('chartSalarioSetor'),{
+      type:'bar',
+      data:{labels:empLabels,datasets:[{label:'Sal. medio',data:salValues,backgroundColor:'rgba(234,179,8,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fC(c.raw)}}},scales:{x:{ticks:{color:'#64748b',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
     });
   }
 }
