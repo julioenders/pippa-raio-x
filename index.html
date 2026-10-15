@@ -4,47 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PIPPA Raio-X — Diagnóstico Territorial</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script>(function(){var t=localStorage.getItem('pippa-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0f172a;--surface:#1e293b;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.06);--text:#e2e8f0;--muted:#64748b;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--purple:#a855f7;--cyan:#06b6d4}
-body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
-.container{max-width:1400px;margin:0 auto;padding:1.5rem}
+:root{--bg:#071a5c;--surface:#0b2574;--card:rgba(101,183,251,.04);--border:rgba(101,183,251,.12);--text:#eff3ee;--text2:#a8c4e0;--muted:#7a9bc0;--accent:#2a4fda;--accent-light:#65b7fb;--green:#61b466;--yellow:#fbec76;--red:#e0565d;--purple:#be64e3;--cyan:#65b7fb;--orange:#f39d72;--font-heading:'Plus Jakarta Sans',sans-serif;--font-body:'Figtree',sans-serif}
+[data-theme="light"]{--bg:#eff3ee;--surface:#ffffff;--card:rgba(42,79,218,.04);--border:rgba(42,79,218,.1);--text:#000000;--text2:#4a5568;--muted:#6b7280;--accent-light:#0b2574}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.container{max-width:1400px;margin:0 auto;padding:0 1.5rem 1.5rem}
 
-header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
-header h1{font-size:1.6rem;font-weight:800;letter-spacing:-.02em}
+header{background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border);margin-bottom:1.5rem;flex-wrap:nowrap;gap:1rem}
+header h1{font-size:1.2rem;font-weight:700;letter-spacing:-.5px;font-family:var(--font-heading);color:var(--accent)}
 header h1 span{color:var(--accent)}
-.badge{display:inline-block;padding:.2rem .6rem;border-radius:6px;font-size:.7rem;font-weight:600;background:rgba(59,130,246,.15);color:var(--accent);border:1px solid rgba(59,130,246,.2)}
-.subtitle{color:var(--muted);font-size:.8rem;margin-top:.3rem}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:6px;font-size:.7rem;font-weight:600;background:rgba(42,79,218,.08);color:var(--accent);border:1px solid var(--border)}
+.subtitle{color:var(--muted);font-size:.72rem;margin-top:.1rem}
 .header-actions{display:flex;gap:.5rem;align-items:center}
-.info-btn{width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;font-family:'Segoe UI',system-ui,sans-serif}
-.info-btn:hover{background:rgba(59,130,246,.3);color:#fff}
-.portal-btn{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.2);padding:.5rem 1rem;border-radius:8px;font-size:.75rem;font-weight:600;text-decoration:none;transition:all .2s}
-.portal-btn:hover{background:rgba(34,197,94,.2)}
+.info-btn{width:32px;height:32px;border-radius:50%;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;font-family:'Segoe UI',system-ui,sans-serif}
+.info-btn:hover{border-color:var(--accent);color:var(--accent)}
+.portal-btn{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.5rem 1rem;border-radius:8px;font-size:.75rem;font-weight:600;text-decoration:none;transition:all .2s}
+.portal-btn:hover{background:var(--card);border-color:var(--accent);color:var(--accent)}
 
 .selector-row{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:flex-end;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem}
 .selector-group{display:flex;flex-direction:column;gap:.3rem;min-width:180px;flex:1}
 .selector-group label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
 .selector-group select{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;font-size:.8rem;font-family:inherit;cursor:pointer;transition:border-color .2s;appearance:auto}
-.selector-group select:hover{border-color:rgba(59,130,246,.4)}
+.selector-group select:hover{border-color:rgba(42,79,218,.4)}
 .selector-group select:disabled{opacity:.4;cursor:not-allowed}
-.territory-label{display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:8px;font-size:.75rem;font-weight:600;color:var(--accent);white-space:nowrap}
+.territory-label{display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:rgba(42,79,218,.1);border:1px solid rgba(42,79,218,.2);border-radius:8px;font-size:.75rem;font-weight:600;color:var(--accent);white-space:nowrap}
 .territory-label .level-icon{font-size:1rem}
 
-.narrative{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.12);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;font-size:.82rem;line-height:1.9;color:#cbd5e1}
-.narrative strong{color:#e2e8f0}
+.narrative{background:rgba(42,79,218,.05);border:1px solid rgba(42,79,218,.12);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;font-size:.82rem;line-height:1.9;color:#c8d8ec}
+.narrative strong{color:#eff3ee}
 .narrative .hl{color:var(--accent);font-weight:600}
 .pos{color:var(--green);font-weight:600}
 .neg{color:var(--red);font-weight:600}
 
 .loading-overlay{text-align:center;padding:3rem;color:var(--muted);font-size:.85rem}
-.spinner{width:36px;height:36px;border:3px solid rgba(59,130,246,.2);border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .8rem}
+.spinner{width:36px;height:36px;border:3px solid rgba(42,79,218,.2);border-top:3px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .8rem}
 @keyframes spin{100%{transform:rotate(360deg)}}
 
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-bottom:1.5rem}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;text-align:center;transition:border-color .2s}
-.kpi:hover{border-color:rgba(59,130,246,.3)}
+.kpi:hover{border-color:rgba(42,79,218,.3)}
 .kpi-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
 .kpi-value{font-size:1.4rem;font-weight:800;color:var(--text)}
 .kpi-detail{font-size:.62rem;color:var(--muted);margin-top:.2rem}
@@ -57,7 +59,7 @@ header h1 span{color:var(--accent)}
 
 .tabs{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:.5rem}
 .tab{padding:.5rem 1rem;border-radius:8px 8px 0 0;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;border:none;transition:all .2s;font-family:inherit}
-.tab.active{color:var(--accent);background:rgba(59,130,246,.1);border-bottom:2px solid var(--accent)}
+.tab.active{color:var(--accent);background:rgba(42,79,218,.1);border-bottom:2px solid var(--accent)}
 .tab:hover{color:var(--text)}
 .tab-content{display:none}
 .tab-content.active{display:block}
@@ -67,14 +69,14 @@ header h1 span{color:var(--accent)}
 .chart-title{font-size:.8rem;font-weight:600;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 
-.insight-box{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;font-size:.78rem;line-height:1.7;color:#94a3b8}
-.insight-box.warn{background:rgba(234,179,8,.05);border-color:rgba(234,179,8,.12)}
-.insight-box.info{background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.12)}
+.insight-box{background:rgba(97,180,102,.05);border:1px solid rgba(97,180,102,.12);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;font-size:.78rem;line-height:1.7;color:#a8c4e0}
+.insight-box.warn{background:rgba(251,236,118,.05);border-color:rgba(251,236,118,.12)}
+.insight-box.info{background:rgba(42,79,218,.05);border-color:rgba(42,79,218,.12)}
 .insight-title{font-weight:700;color:var(--text);margin-bottom:.3rem;font-size:.82rem}
 
 .ranking-list{display:flex;flex-direction:column;gap:.5rem}
 .ranking-item{display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;background:rgba(255,255,255,.02);border-radius:8px;font-size:.75rem}
-.ranking-pos{width:24px;height:24px;border-radius:50%;background:rgba(59,130,246,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.65rem;flex-shrink:0}
+.ranking-pos{width:24px;height:24px;border-radius:50%;background:rgba(42,79,218,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.65rem;flex-shrink:0}
 .ranking-name{flex:1;color:var(--text)}
 .ranking-value{font-weight:700;color:var(--accent);white-space:nowrap}
 .ranking-bar{flex:2;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden}
@@ -82,24 +84,39 @@ header h1 span{color:var(--accent)}
 
 .section-title{font-size:.85rem;font-weight:700;margin:1.2rem 0 .8rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
 
+.theme-toggle{background:transparent;border:1px solid var(--border);color:var(--muted);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--card)}
+.icon-moon{display:none}
+[data-theme="light"] .icon-sun{display:none}
+[data-theme="light"] .icon-moon{display:block}
+[data-theme="light"] header{border-bottom-color:var(--border)}
+[data-theme="light"] .selector-row{background:var(--surface);border-color:var(--border)}
+[data-theme="light"] .narrative{background:rgba(42,79,218,.05);border-color:rgba(42,79,218,.12);color:var(--text2)}
+[data-theme="light"] .narrative strong{color:var(--text)}
+[data-theme="light"] .insight-box{color:var(--text2)}
+[data-theme="light"] .insight-title{color:var(--text)}
+[data-theme="light"] .info-modal{background:var(--surface);border-color:var(--border)}
+[data-theme="light"] .info-overlay{background:rgba(0,0,0,.5)}
+
 .footer{text-align:center;padding:2rem 0;border-top:1px solid var(--border);margin-top:2rem;color:var(--muted);font-size:.68rem;line-height:1.8}
 
 .info-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .info-overlay.active{display:flex}
-.info-modal{background:#1e293b;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:2rem;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
+.info-modal{background:#0b2574;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:2rem;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
 .info-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
 .info-close:hover{color:var(--text)}
 .info-modal h2{font-size:1.1rem;font-weight:700;margin-bottom:.8rem;color:var(--accent)}
 .info-modal h3{font-size:.85rem;font-weight:600;margin:1rem 0 .4rem;color:var(--text);border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:.3rem}
-.info-modal p,.info-modal li{font-size:.78rem;color:#94a3b8;line-height:1.7}
+.info-modal p,.info-modal li{font-size:.78rem;color:#a8c4e0;line-height:1.7}
 .info-modal ul{padding-left:1.2rem;margin-bottom:.5rem}
-.info-source{font-size:.7rem;padding:5px 10px;border-radius:6px;background:rgba(59,130,246,.06);border-left:3px solid var(--accent);margin:.4rem 0;color:#94a3b8;line-height:1.6}
+.info-source{font-size:.7rem;padding:5px 10px;border-radius:6px;background:rgba(42,79,218,.06);border-left:3px solid var(--accent);margin:.4rem 0;color:#a8c4e0;line-height:1.6}
 
 @media(max-width:768px){
   .grid-2{grid-template-columns:1fr}
   .kpi-row{grid-template-columns:repeat(2,1fr)}
   .selector-row{flex-direction:column}
   .selector-group{min-width:100%}
+  header{padding:12px 16px;flex-wrap:wrap}
 }
 </style>
 </head>
@@ -112,9 +129,11 @@ header h1 span{color:var(--accent)}
     <div class="subtitle">Diagnostico Territorial com Dados Publicos em Tempo Real</div>
   </div>
   <div class="header-actions">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema"><svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
     <div class="territory-label"><span class="level-icon" id="levelIcon">🇧🇷</span><span id="levelLabel">Brasil</span></div>
     <span class="badge">PIPPA — Indicadores</span>
     <button class="info-btn" onclick="openInfo()" title="Metodologia e fontes">i</button>
+    <button class="info-btn" onclick="exportWhatsApp()" title="Compartilhar via WhatsApp" style="font-size:16px">📤</button>
     <a href="https://julioenders.github.io/pippa-sebrae/pippa-portal/index.html" class="portal-btn">Portal PIPPA</a>
   </div>
 </header>
@@ -220,6 +239,7 @@ header h1 span{color:var(--accent)}
 </div>
 
 <script>
+function toggleTheme(){const html=document.documentElement;const t=html.getAttribute('data-theme')==='dark'?'light':'dark';html.setAttribute('data-theme',t);localStorage.setItem('pippa-theme',t)}
 const IBGE_LOC='https://servicodados.ibge.gov.br/api/v1/localidades';
 const IBGE_AGG='https://servicodados.ibge.gov.br/api/v3/agregados';
 const BCB='https://api.bcb.gov.br/dados/serie/bcdata.sgs';
@@ -231,7 +251,7 @@ const REGIAO_UFS={1:'11,12,13,14,15,16,17',2:'21,22,23,24,25,26,27,28,29',3:'31,
 const LEVEL_ICONS={brasil:'🇧🇷',regiao:'🗺️',estado:'📍',municipio:'🏘️'};
 const LEVEL_NAMES={brasil:'Brasil',regiao:'Regiao',estado:'Estado',municipio:'Municipio'};
 const IBGE_NIVEL={brasil:'N1',regiao:'N2',estado:'N3',municipio:'N6'};
-const CHART_COLORS=['#3b82f6','#22c55e','#a855f7','#eab308','#ef4444','#06b6d4','#f97316','#ec4899'];
+const CHART_COLORS=['#2a4fda','#61b466','#be64e3','#fbec76','#e0565d','#65b7fb','#f39d72','#ff80c8'];
 
 let allEstados=[];
 let statesPopPib={};
@@ -744,8 +764,8 @@ function renderPerfil(d){
   if(years.length>0){
     charts.pop=new Chart(document.getElementById('chartPop'),{
       type:'bar',
-      data:{labels:years,datasets:[{label:'Populacao',data:popValues,backgroundColor:'rgba(59,130,246,.6)',borderColor:'#3b82f6',borderWidth:1,borderRadius:4}]},
-      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Populacao: '+fN(c.raw)}}},scales:{x:{ticks:{color:'#64748b',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#64748b',callback:v=>fN(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
+      data:{labels:years,datasets:[{label:'Populacao',data:popValues,backgroundColor:'rgba(42,79,218,.6)',borderColor:'#2a4fda',borderWidth:1,borderRadius:4}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'Populacao: '+fN(c.raw)}}},scales:{x:{ticks:{color:'#7a9bc0',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#7a9bc0',callback:v=>fN(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
     });
   }
 }
@@ -834,26 +854,26 @@ function renderEmpresas(d){
 
   const porteLabels=['MEI','ME','EPP','Outros'];
   const porteValues=[p.mei,p.me,p.epp,p.outros];
-  const porteColors=['#3b82f6','#22c55e','#a855f7','#64748b'];
+  const porteColors=['#2a4fda','#61b466','#be64e3','#7a9bc0'];
   charts.porte=new Chart(document.getElementById('chartPorte'),{
     type:'doughnut',
     data:{labels:porteLabels,datasets:[{data:porteValues,backgroundColor:porteColors,borderWidth:0}]},
-    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fN(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#a8c4e0',font:{size:11},padding:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fN(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
   });
 
   if(setores.length>0){
     charts.setorRF=new Chart(document.getElementById('chartSetorRF'),{
       type:'bar',
-      data:{labels:setores.map(s=>s.nome.length>18?s.nome.substring(0,16)+'...':s.nome),datasets:[{label:'Empresas',data:setores.map(s=>s.qtd),backgroundColor:'rgba(168,85,247,.6)',borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' empresas'}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+      data:{labels:setores.map(s=>s.nome.length>18?s.nome.substring(0,16)+'...':s.nome),datasets:[{label:'Empresas',data:setores.map(s=>s.qtd),backgroundColor:'rgba(190,100,227,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' empresas'}}},scales:{x:{ticks:{color:'#7a9bc0'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#a8c4e0',font:{size:10}},grid:{display:false}}}}
     });
   }
 
   if(topDiv.length>0){
     charts.divisao=new Chart(document.getElementById('chartDivisao'),{
       type:'bar',
-      data:{labels:topDiv.map(s=>s.nome.length>22?s.nome.substring(0,20)+'...':s.nome),datasets:[{label:'Empresas',data:topDiv.map(s=>s.qtd),backgroundColor:'rgba(34,197,94,.6)',borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' empresas'}}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+      data:{labels:topDiv.map(s=>s.nome.length>22?s.nome.substring(0,20)+'...':s.nome),datasets:[{label:'Empresas',data:topDiv.map(s=>s.qtd),backgroundColor:'rgba(97,180,102,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fN(c.raw)+' empresas'}}},scales:{x:{ticks:{color:'#7a9bc0'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#a8c4e0',font:{size:10}},grid:{display:false}}}}
     });
   }
 }
@@ -921,13 +941,13 @@ function renderEmprego(d){
     charts.empregoSetor=new Chart(document.getElementById('chartEmpregoSetor'),{
       type:'doughnut',
       data:{labels:empLabels,datasets:[{data:empValues,backgroundColor:CHART_COLORS.slice(0,empValues.length),borderWidth:0}]},
-      options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:10},padding:8,boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fN(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
+      options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#a8c4e0',font:{size:10},padding:8,boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fN(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
     });
 
     charts.salarioSetor=new Chart(document.getElementById('chartSalarioSetor'),{
       type:'bar',
-      data:{labels:empLabels,datasets:[{label:'Sal. medio',data:salValues,backgroundColor:'rgba(234,179,8,.6)',borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fC(c.raw)}}},scales:{x:{ticks:{color:'#64748b',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+      data:{labels:empLabels,datasets:[{label:'Sal. medio',data:salValues,backgroundColor:'rgba(251,236,118,.6)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fC(c.raw)}}},scales:{x:{ticks:{color:'#7a9bc0',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#a8c4e0',font:{size:10}},grid:{display:false}}}}
     });
   }
 }
@@ -997,16 +1017,16 @@ function renderEconomia(d){
   if(pibYears.length>0){
     charts.pib=new Chart(document.getElementById('chartPib'),{
       type:'line',
-      data:{labels:pibYears,datasets:[{label:'PIB',data:pibValues,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#22c55e'}]},
-      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'PIB: '+fC(c.raw)}}},scales:{x:{ticks:{color:'#64748b',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#64748b',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
+      data:{labels:pibYears,datasets:[{label:'PIB',data:pibValues,borderColor:'#61b466',backgroundColor:'rgba(97,180,102,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#61b466'}]},
+      options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'PIB: '+fC(c.raw)}}},scales:{x:{ticks:{color:'#7a9bc0',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#7a9bc0',callback:v=>fC(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
     });
   }
 
   if(hasVab){
     charts.vab=new Chart(document.getElementById('chartVab'),{
       type:'doughnut',
-      data:{labels:vabLabels,datasets:[{data:vabValues,backgroundColor:['#22c55e','#3b82f6','#a855f7','#eab308'],borderWidth:0}]},
-      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fC(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
+      data:{labels:vabLabels,datasets:[{data:vabValues,backgroundColor:['#61b466','#2a4fda','#be64e3','#fbec76'],borderWidth:0}]},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#a8c4e0',font:{size:11},padding:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((s,v)=>s+v,0);return c.label+': '+fC(c.raw)+' ('+pct(c.raw/t*100)+')'}}}}}
     });
   }
 }
@@ -1070,13 +1090,40 @@ function renderCenario(){
     <div class="grid-2">
       <div class="chart-box">
         <div class="chart-title"><span class="dot" style="background:var(--green)"></span>Credito livre para empresas (PJ)</div>
-        <div style="padding:1rem 0;font-size:.82rem;line-height:1.8;color:#94a3b8">${creditoCtx||'Dados indisponiveis.'}</div>
+        <div style="padding:1rem 0;font-size:.82rem;line-height:1.8;color:#a8c4e0">${creditoCtx||'Dados indisponiveis.'}</div>
       </div>
       <div class="chart-box">
         <div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Mercado de trabalho formal</div>
-        <div style="padding:1rem 0;font-size:.82rem;line-height:1.8;color:#94a3b8">${empregoCtx||'Dados indisponiveis.'}</div>
+        <div style="padding:1rem 0;font-size:.82rem;line-height:1.8;color:#a8c4e0">${empregoCtx||'Dados indisponiveis.'}</div>
       </div>
     </div>`;
+}
+
+function exportWhatsApp(){
+  const d=currentView.level==='brasil'?nationalData:null;
+  const nm=currentView.name;
+  const lv=currentView.level;
+  const narrativeEl=document.getElementById('narrative');
+  const narrativeText=narrativeEl?narrativeEl.innerText.replace(/\s+/g,' ').trim():'';
+  const kpis=document.querySelectorAll('#kpiRow .kpi');
+  let kpiLines=[];
+  kpis.forEach(k=>{
+    const label=k.querySelector('.kpi-label');
+    const value=k.querySelector('.kpi-value');
+    if(label&&value)kpiLines.push('• '+label.textContent+': '+value.textContent);
+  });
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  let msg='📊 *PIPPA Raio-X — '+nm+'*\n';
+  msg+='_Diagnostico territorial | '+hoje+'_\n\n';
+  msg+='*Nivel:* '+lv.charAt(0).toUpperCase()+lv.slice(1)+'\n\n';
+  if(kpiLines.length){msg+='*Indicadores:*\n'+kpiLines.join('\n')+'\n\n';}
+  if(narrativeText){
+    const resumo=narrativeText.length>500?narrativeText.substring(0,497)+'...':narrativeText;
+    msg+='*Resumo:*\n'+resumo+'\n\n';
+  }
+  msg+='🔗 https://julioenders.github.io/pippa-raio-x/\n';
+  msg+='_PIPPA — Sebrae Nacional_';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
 init();
