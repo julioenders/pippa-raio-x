@@ -1,0 +1,39 @@
+name: Update PIPPA Raio-X Cache
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  OBSERVATORIO_TOKEN: ${{ secrets.OBSERVATORIO_TOKEN }}
+
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache OLAP data
+        run: python scripts/cache_olap.py
+
+      - name: Commit updated cache
+        run: |
+          if git diff --quiet data/ 2>/dev/null; then
+            echo "No changes in cache"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/
+            git commit -m "chore: update RF cache $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
